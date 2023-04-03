@@ -1,12 +1,6 @@
+//Mixin Bot
 const { BlazeClient } = require("mixin-node-sdk");
 const config = require("./config");
-const { Configuration, OpenAIApi } = require("openai");
-
-const configuration = new Configuration({
-  apiKey: config.openai_key,
-});
-const openai = new OpenAIApi(configuration);
-
 const client = new BlazeClient(
   {
     pin: config.pin,
@@ -18,6 +12,14 @@ const client = new BlazeClient(
   { parse: true, syncAck: true }
 );
 
+//ChatGPT
+const { Configuration, OpenAIApi } = require("openai");
+const configuration = new Configuration({
+  apiKey: config.openai_key,
+});
+const openai = new OpenAIApi(configuration);
+
+//WS
 client.loopBlaze({
   async onMessage(msg) {
     console.log(msg);
@@ -55,6 +57,7 @@ client.loopBlaze({
   onAckReceipt() {},
 });
 
+//Functions
 function checkLanguage(text) {
   // 判断第一个字符的编码范围来确定语言
   const firstCharCode = text.charCodeAt(0);
@@ -71,28 +74,36 @@ function checkLanguage(text) {
 async function translate(lang, text) {
   if (lang === "chinese") {
     // rec = "Hello" + text; //翻译
-    const completion = await openai.createChatCompletion({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: "You are a helpful assistant that translates Chinese to English.",
-        },
-        {
-          role: "user",
-          content: `Translate the following Chinese text to English: ${text}`,
-        },
-      ],
-    });
-    // console.log(completion)
-    console.log(completion.data.choices[0].message.content);
-    return completion.data.choices[0].message.content
+    msg = [
+      {
+        role: "system",
+        content:
+          "You are a helpful assistant that translates Chinese to English.",
+      },
+      {
+        role: "user",
+        content: `Translate the following Chinese text to English: ${text}`,
+      },
+    ];
   } else if (lang === "english") {
-    rec = "你好" + text; //翻译
+    // rec = "你好" + text; //翻译
+    msg = [
+      {
+        role: "system",
+        content:
+          "You are a helpful assistant that translates English to Chinese.",
+      },
+      {
+        role: "user",
+        content: `Translate the following English text to Chinese: ${text}`,
+      },
+    ];
   }
-  return rec;
+  const completion = await openai.createChatCompletion({
+    model: "gpt-3.5-turbo",
+    messages: msg,
+  });
+  // console.log(completion)
+  console.log(completion.data.choices[0].message.content);
+  return completion.data.choices[0].message.content.replace(/^"(.*)"$/, "$1");
 }
-
-
-
-

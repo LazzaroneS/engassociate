@@ -1,0 +1,15 @@
+{
+  "name": "engassociate",
+  "version": "1.0.0",
+  "description": "A bot help to learn English.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "MumuWu",
+  "license": "ISC",
+  "dependencies": {
+    "mixin-node-sdk": "^3.1.13",
+    "openai": "^3.2.1"
+  }
+}

@@ -23,36 +23,40 @@ const openai = new OpenAIApi(configuration);
 client.loopBlaze({
   async onMessage(msg) {
     console.log(msg);
-    const rawData = msg.data.toString();
+    if (msg.category === "PLAIN_TEXT") {
+      const rawData = msg.data.toString();
 
-    const lang = checkLanguage(rawData);
+      const lang = checkLanguage(rawData);
 
-    rawZhData = "";
-    rawEnData = "";
+      rawZhData = "";
+      rawEnData = "";
 
-    if (lang === "chinese") {
-      console.log("chinese");
-      rawZhData = rawData; //中文
-      rawEnData = await translate(lang, rawData); //英文
-    } else if (lang === "english") {
-      console.log("english");
-      rawEnData = rawData; //英文
-      rawZhData = await translate(lang, rawData); //中文
-    } else if (lang === "unknown") {
-      console.log("unknow");
-      client.sendMessageText(
-        msg.user_id,
-        `Only English and Chinese are supported.\n仅支持英文或中文。`
-      );
+      if (lang === "chinese") {
+        console.log("chinese");
+        rawZhData = rawData; //中文
+        rawEnData = await translate(lang, rawData); //英文
+      } else if (lang === "english") {
+        console.log("english");
+        rawEnData = rawData; //英文
+        rawZhData = await translate(lang, rawData); //中文
+      } else if (lang === "unknown") {
+        console.log("unknow");
+        client.sendMessageText(
+          msg.user_id,
+          `Only English and Chinese are supported.\n仅支持英文或中文。`
+        );
+      }
+      //处理收到的消息
+
+      //处理返回的消息
+      const returnEnData = await conversation(rawEnData); //英文
+      const returnZhData = await translate("english", returnEnData); //中文
+
+      const rec = `> 用户\n英文：${rawEnData}\n中文：${rawZhData}\n\n< 助手\n英文：${returnEnData}\n中文：${returnZhData}`;
+      await client.sendMessageText(msg.user_id, rec);
+    } else {
+      client.sendMessageText(msg.user_id, "Only supports text.\n仅支持文本。");
     }
-    //处理收到的消息
-
-    //处理返回的消息
-    const returnZhData = "您好"; //中文
-    const returnEnData = "How are you."; //英文
-
-    const rec = `> 用户\n中文：${rawZhData}\n英文：${rawEnData}\n\n< 助手\n中文：${returnZhData}\n英文：${returnEnData}`;
-    await client.sendMessageText(msg.user_id, rec);
   },
   onAckReceipt() {},
 });
@@ -99,6 +103,28 @@ async function translate(lang, text) {
       },
     ];
   }
+
+  const rec = await queryChatGPT(msg);
+  return rec;
+}
+
+async function conversation(text) {
+  msg = [
+    {
+      role: "system",
+      content:
+        "I want you to act as a spoken English teacher and improver. I will speak to you in English and you will reply to me in English to practice my spoken English. I want you to keep your reply neat, limiting the reply to 100 words. I want you to strictly correct my grammar mistakes, typos, and factual errors. I want you to ask me a question in your reply. Now let's start practicing, you could ask me a question first. Remember, I want you to strictly correct my grammar mistakes, typos, and factual errors.",
+    },
+    {
+      role: "user",
+      content: text,
+    },
+  ];
+  const rec = await queryChatGPT(msg);
+  return rec;
+}
+
+async function queryChatGPT(msg) {
   const completion = await openai.createChatCompletion({
     model: "gpt-3.5-turbo",
     messages: msg,

@@ -21,97 +21,179 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 //Data
-const words = [
-  "Function",
-  "Object",
-  "Class",
-  "Method",
-  "Property",
-  "Array",
-  "String",
-  "Number",
-  "Boolean",
-  "Null",
-  "Undefined",
-  "Promise",
-  "Callback",
-  "Event",
-  "Module",
-  "Variable",
-  "Constructor",
-  "Prototype",
-  "Iterator",
-  "Decorator",
-];
+const words = {
+  function: {
+    numOfStudies: 0,
+    lastStudyTime: Date.now(),
+    nextStudyTime: Date.now(),
+  },
+  object: {
+    numOfStudies: 0,
+    lastStudyTime: Date.now(),
+    nextStudyTime: Date.now(),
+  },
+  class: {
+    numOfStudies: 0,
+    lastStudyTime: Date.now(),
+    nextStudyTime: Date.now(),
+  },
+  method: {
+    numOfStudies: 0,
+    lastStudyTime: Date.now(),
+    nextStudyTime: Date.now(),
+  },
+  property: {
+    numOfStudies: 0,
+    lastStudyTime: Date.now(),
+    nextStudyTime: Date.now(),
+  },
+  array: {
+    numOfStudies: 0,
+    lastStudyTime: Date.now(),
+    nextStudyTime: Date.now(),
+  },
+  string: {
+    numOfStudies: 0,
+    lastStudyTime: Date.now(),
+    nextStudyTime: Date.now(),
+  },
+  number: {
+    numOfStudies: 0,
+    lastStudyTime: Date.now(),
+    nextStudyTime: Date.now(),
+  },
+  boolean: {
+    numOfStudies: 0,
+    lastStudyTime: Date.now(),
+    nextStudyTime: Date.now(),
+  },
+  null: {
+    numOfStudies: 0,
+    lastStudyTime: Date.now(),
+    nextStudyTime: Date.now(),
+  },
+  undefin: {
+    numOfStudies: 0,
+    lastStudyTime: Date.now(),
+    nextStudyTime: Date.now(),
+  },
+  promise: {
+    numOfStudies: 0,
+    lastStudyTime: Date.now(),
+    nextStudyTime: Date.now(),
+  },
+  callbac: {
+    numOfStudies: 0,
+    lastStudyTime: Date.now(),
+    nextStudyTime: Date.now(),
+  },
+  event: {
+    numOfStudies: 0,
+    lastStudyTime: Date.now(),
+    nextStudyTime: Date.now(),
+  },
+  module: {
+    numOfStudies: 0,
+    lastStudyTime: Date.now(),
+    nextStudyTime: Date.now(),
+  },
+  variabl: {
+    numOfStudies: 0,
+    lastStudyTime: Date.now(),
+    nextStudyTime: Date.now(),
+  },
+  constru: {
+    numOfStudies: 0,
+    lastStudyTime: Date.now(),
+    nextStudyTime: Date.now(),
+  },
+  prototy: {
+    numOfStudies: 0,
+    lastStudyTime: Date.now(),
+    nextStudyTime: Date.now(),
+  },
+  iterato: {
+    numOfStudies: 0,
+    lastStudyTime: Date.now(),
+    nextStudyTime: Date.now(),
+  },
+  decorat: {
+    numOfStudies: 0,
+    lastStudyTime: Date.now(),
+    nextStudyTime: Date.now(),
+  },
+};
 
 //WS
 client.loopBlaze({
   async onMessage(msg) {
     console.log(msg);
-    if (
-      msg.category === "PLAIN_TEXT" &&
-      whitelist.user_id.includes(msg.user_id) &&
-      typeof msg.data === "string"
-    ) {
-      if (["?", "？", "你好", "Hi"].includes(msg.data)) {
-        helpMsg = `🧑‍🏫 发送 / ,随机获取6个单词按钮，点击按钮，开始该单词的对话练习；\n📖 发送 /+内容，为仅使用翻译功能，比如发送： /您好；\n💡 发送 ? ，获取此帮助信息。`;
-        client.sendMessageText(msg.user_id, helpMsg);
-      } else if (msg.data === "/") {
-        sendRandomWords(msg.user_id);
-      } else if (msg.data.substring(0, 1) === "/") {
-        const rawData = msg.data.substring(1);
-        const lang = checkLanguage(rawData);
-        const rec = await translate(lang, rawData);
-        const message = rec.rec;
-        const cost = rec.cost;
-        console.log(cost);
-        client.sendMessageText(msg.user_id, `> ${rawData}\n< ${message}`);
-      } else {
-        const rawData = msg.data.toString();
-        const lang = checkLanguage(rawData);
-
-        let rawZhData = "";
-        let rawEnData = "";
-        let cost = 0;
-
-        //处理收到的消息
-        if (lang === "chinese") {
-          rawZhData = rawData; //中文
+    if (msg.category === "PLAIN_TEXT" && typeof msg.data === "string") {
+      if (whitelist.user_id.includes(msg.user_id)) {
+        if (["?", "？", "你好", "Hi"].includes(msg.data)) {
+          helpMsg = `🧑‍🏫 发送 / ,随机获取6个单词按钮，点击按钮，开始该单词的对话练习；\n📖 发送 /+内容，为仅使用翻译功能，比如发送： /您好；\n💡 发送 ? ，获取此帮助信息。`;
+          client.sendMessageText(msg.user_id, helpMsg);
+        } else if (msg.data === "/") {
+          sendRandomWords(msg.user_id);
+        } else if (msg.data.substring(0, 1) === "/") {
+          const rawData = msg.data.substring(1);
+          const lang = checkLanguage(rawData);
           const rec = await translate(lang, rawData);
-          rawEnData = rec.rec; //英文
-          cost += rec.cost;
-        } else if (lang === "english") {
-          rawEnData = rawData; //英文
-          const rec = await translate(lang, rawData);
-          rawZhData = rec.rec; //中文
-          cost += rec.cost;
-        } else if (lang === "unknown") {
-          client.sendMessageText(
-            msg.user_id,
-            `Only English and Chinese are supported.\n仅支持英文或中文。`
+          const message = rec.rec;
+          const cost = rec.cost;
+          console.log(cost);
+          client.sendMessageText(msg.user_id, `> ${rawData}\n< ${message}`);
+        } else {
+          const rawData = msg.data.toString();
+          const lang = checkLanguage(rawData);
+
+          let rawZhData = "";
+          let rawEnData = "";
+          let cost = 0;
+
+          //处理收到的消息
+          if (lang === "chinese") {
+            rawZhData = rawData; //中文
+            const rec = await translate(lang, rawData);
+            rawEnData = rec.rec; //英文
+            cost += rec.cost;
+          } else if (lang === "english") {
+            rawEnData = rawData; //英文
+            const rec = await translate(lang, rawData);
+            rawZhData = rec.rec; //中文
+            cost += rec.cost;
+          } else if (lang === "unknown") {
+            client.sendMessageText(
+              msg.user_id,
+              `Only English and Chinese are supported.\n仅支持英文或中文。`
+            );
+          }
+
+          updateWordsList(rawEnData);
+
+          //处理返回的消息
+          const conversationReturn = await conversation(
+            `Please start a conversation with "${rawEnData}".`
           );
+          const returnEnData = conversationReturn.rec; //英文
+          const costOfReturnFromChatGPT = conversationReturn.cost;
+          cost += costOfReturnFromChatGPT;
+          const translateOfConversationReturn = await translate(
+            "english",
+            returnEnData
+          );
+          const returnZhData = translateOfConversationReturn.rec; //中文
+          const costOfTranslateEnToZh = translateOfConversationReturn.cost;
+          cost += costOfTranslateEnToZh;
+
+          //最终Cost
+          console.log(cost);
+
+          const rec = `> 用户\n英文：${rawEnData}\n中文：${rawZhData}\n\n< 助手\n英文：${returnEnData}\n中文：${returnZhData}`;
+          await client.sendMessageText(msg.user_id, rec);
         }
-
-        //处理返回的消息
-        const conversationReturn = await conversation(
-          `Please start a conversation with "${rawEnData}".`
-        );
-        const returnEnData = conversationReturn.rec; //英文
-        const costOfReturnFromChatGPT = conversationReturn.cost;
-        cost += costOfReturnFromChatGPT;
-        const translateOfConversationReturn = await translate(
-          "english",
-          returnEnData
-        );
-        const returnZhData = translateOfConversationReturn.rec; //中文
-        const costOfTranslateEnToZh = translateOfConversationReturn.cost;
-        cost += costOfTranslateEnToZh;
-
-        //最终Cost
-        console.log(cost);
-
-        const rec = `> 用户\n英文：${rawEnData}\n中文：${rawZhData}\n\n< 助手\n英文：${returnEnData}\n中文：${returnZhData}`;
-        await client.sendMessageText(msg.user_id, rec);
+      } else {
+        client.sendMessageText(msg.user_id, "服务暂未对外开放。");
       }
     } else {
       client.sendMessageText(msg.user_id, "Only supports text.\n仅支持文本。");
@@ -204,11 +286,14 @@ async function queryChatGPT(msg) {
 }
 
 function randomWords() {
+  const keys = Object.keys(words);
   const selectedWords = [];
   while (selectedWords.length < 6) {
-    const randomIndex = Math.floor(Math.random() * words.length);
-    if (!selectedWords.includes(words[randomIndex])) {
-      selectedWords.push(words[randomIndex]);
+    const randomIndex = Math.floor(Math.random() * keys.length);
+    if (!selectedWords.includes(keys[randomIndex])) {
+      if (words[keys[randomIndex]].nextStudyTime <= Date.now()) {
+        selectedWords.push(keys[randomIndex]);
+      }
     }
   }
   return selectedWords;
@@ -249,4 +334,58 @@ async function sendRandomWords(user_id) {
       action: `input:${selectedWords[5]}`, // 按钮的跳转链接
     },
   ]);
+}
+
+function getNextStudyTime(numOfStudies, lastStudyTime) {
+  // 计算学习间隔时间
+  const interval = (Date.now() - lastStudyTime) / (1000 * 60 * 60 * 24);
+  //interval = 6
+  let nextStudyTime;
+
+  // 根据记忆次数和学习间隔时间计算下一次学习时间
+  if (numOfStudies === 0) {
+    nextStudyTime = Date.now() + 24 * 60 * 60 * 1000; // 第一次学习间隔1天
+  } else if (numOfStudies === 1) {
+    nextStudyTime = Date.now() + 7 * 24 * 60 * 60 * 1000; // 第二次学习间隔1周
+  } else {
+    let days = 0;
+    const prevInterval = interval / numOfStudies;
+    if (prevInterval <= 1) {
+      days = 1;
+    } else if (prevInterval <= 2) {
+      days = 2;
+    } else if (prevInterval <= 4) {
+      days = 4;
+    } else if (prevInterval <= 7) {
+      days = 7;
+    } else if (prevInterval <= 15) {
+      days = 15;
+    } else {
+      days = 30;
+    }
+    nextStudyTime = Date.now() + days * 24 * 60 * 60 * 1000;
+  }
+  return nextStudyTime;
+}
+
+function checkWord(text) {
+  const keys = Object.keys(words);
+  if (keys.includes(text)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+function updateWordsList(text) {
+  text = text.toLowerCase();
+  if (checkWord(text)) {
+    words[text].numOfStudies += 1;
+    words[text].lastStudyTime = Date.now();
+    words[text].nextStudyTime = getNextStudyTime(
+      words[text].numOfStudies,
+      words[text].lastStudyTime
+    );
+  }
+  console.log(words[text]);
 }

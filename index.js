@@ -1,3 +1,9 @@
+const axios = require("axios");
+const fs = require("fs");
+const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
+const ffmpeg = require("fluent-ffmpeg");
+ffmpeg.setFfmpegPath(ffmpegPath);
+
 //Mixin Bot
 const { BlazeClient } = require("mixin-node-sdk");
 const config = require("./config");
@@ -128,8 +134,23 @@ const words = {
 client.loopBlaze({
   async onMessage(msg) {
     console.log(msg);
-    if (msg.category === "PLAIN_TEXT" && typeof msg.data === "string") {
+    if (
+      (msg.category === "PLAIN_TEXT" && typeof msg.data === "string") ||
+      msg.category === "PLAIN_AUDIO"
+    ) {
       if (whitelist.user_id.includes(msg.user_id)) {
+        if (msg.category === "PLAIN_AUDIO") {
+          const id = msg.data.attachment_id;
+          const url = (await client.showAttachment(id)).view_url;
+          const reg = /attachments\/(.+)/;
+          const filename = reg.exec(url)[1];
+          await getAudio(url, filename);
+          await convertToMp3(filename);
+          msg.data = await createTranscription(filename);
+          await cleanFile(`./audiocach/${filename}.ogg`);
+          await cleanFile(`./audiocach/${filename}.mp3`);
+        }
+        console.log(msg.data);
         if (["?", "？", "你好", "Hi"].includes(msg.data)) {
           helpMsg = `🧑‍🏫 发送 / ,随机获取6个单词按钮，点击按钮，开始该单词的对话练习；\n📖 发送 /+内容，为仅使用翻译功能，比如发送： /您好；\n💡 发送 ? ，获取此帮助信息。`;
           client.sendMessageText(msg.user_id, helpMsg);
@@ -196,7 +217,10 @@ client.loopBlaze({
         client.sendMessageText(msg.user_id, "服务暂未对外开放。");
       }
     } else {
-      client.sendMessageText(msg.user_id, "Only supports text.\n仅支持文本。");
+      client.sendMessageText(
+        msg.user_id,
+        "Only supports text.\n仅支持文本或语音消息。"
+      );
     }
   },
   onAckReceipt() {},
@@ -388,4 +412,46 @@ function updateWordsList(text) {
     );
   }
   console.log(words[text]);
+}
+
+async function getAudio(url, filename) {
+  // download the ogg file from the given URL
+  const response = await axios({
+    url,
+    method: "GET",
+    responseType: "stream",
+  });
+
+  const writer = fs.createWriteStream(`./audiocach/${filename}.ogg`);
+  response.data.pipe(writer);
+
+  return new Promise((resolve, reject) => {
+    writer.on("finish", resolve);
+    writer.on("error", reject);
+  });
+}
+
+async function convertToMp3(filename) {
+  return new Promise((resolve, reject) => {
+    ffmpeg(`./audiocach/${filename}.ogg`)
+      .outputOptions("-acodec libmp3lame")
+      .on("end", resolve)
+      .on("error", reject)
+      .save(`./audiocach/${filename}.mp3`);
+  });
+}
+
+async function createTranscription(filename) {
+  const resp = await openai.createTranscription(
+    fs.createReadStream(`./audiocach/${filename}.mp3`),
+    "whisper-1"
+  );
+  return resp.data.text;
+}
+
+async function cleanFile(filename) {
+  fs.unlink(filename, (err) => {
+    if (err) throw err;
+    console.log("文件已删除");
+  });
 }
